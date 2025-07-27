@@ -1,4 +1,11 @@
 package com.empresa.sistemarh.repository;
 
-public class EventoRepository {
+import com.empresa.sistemarh.model.Evento;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import java.util.List;
+
+public interface EventoRepository extends JpaRepository<Evento, Long> {
+    @Query("SELECT e FROM Evento e ORDER BY e.dataCriacao DESC")
+    List<Evento> findAllOrderByDataCriacaoDesc();
 }
