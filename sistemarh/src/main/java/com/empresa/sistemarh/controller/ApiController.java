@@ -1,5 +1,6 @@
 package com.empresa.sistemarh.controller;
 
+import com.empresa.sistemarh.dto.VagaDTO;
 import com.empresa.sistemarh.model.*;
 import com.empresa.sistemarh.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -37,14 +39,8 @@ public class ApiController {
         List<Vaga> vagasAtivas = vagaService.listarVagasAtivas();
         List<Evento> eventos = eventoService.listarTodos();
 
-        // Contar total de candidatos de todas as vagas
-        List<Vaga> todasVagas = vagaService.listarTodas();
-        long totalCandidatos = 0;
-        for (Vaga vaga : todasVagas) {
-            if (vaga.getCandidatos() != null) {
-                totalCandidatos += vaga.getCandidatos().size();
-            }
-        }
+        // Contar total de candidatos usando o método do service
+        long totalCandidatos = candidatoService.contarTotalCandidatos();
 
         stats.put("totalAreas", areas.size());
         stats.put("vagasAtivas", vagasAtivas.size());
@@ -111,8 +107,15 @@ public class ApiController {
 
     // === VAGAS ===
     @GetMapping("/vagas")
-    public ResponseEntity<List<Vaga>> listarTodasVagas() {
-        return ResponseEntity.ok(vagaService.listarTodas());
+    public ResponseEntity<List<VagaDTO>> listarTodasVagas() {
+        List<Vaga> vagas = vagaService.listarTodas();
+        List<VagaDTO> vagasDTO = vagas.stream()
+                .map(vaga -> {
+                    long candidatosCount = candidatoService.contarCandidatosPorVaga(vaga.getId());
+                    return new VagaDTO(vaga, candidatosCount);
+                })
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(vagasDTO);
     }
 
     @GetMapping("/vagas/ativas")
@@ -209,6 +212,14 @@ public class ApiController {
                                                             @RequestParam(required = false) String filtro) {
         List<Candidato> candidatos = candidatoService.buscarPorVagaENome(vagaId, filtro);
         return ResponseEntity.ok(candidatos);
+    }
+
+    @GetMapping("/vagas/{vagaId}/candidatos/count")
+    public ResponseEntity<Map<String, Long>> contarCandidatos(@PathVariable Long vagaId) {
+        long count = candidatoService.contarCandidatosPorVaga(vagaId);
+        Map<String, Long> response = new HashMap<>();
+        response.put("count", count);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/candidaturas")

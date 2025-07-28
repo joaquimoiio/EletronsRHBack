@@ -13,4 +13,7 @@ public interface CandidatoRepository extends JpaRepository<Candidato, Long> {
 
     @Query("SELECT c FROM Candidato c WHERE c.vaga.id = :vagaId AND LOWER(c.nome) LIKE LOWER(CONCAT('%', :nome, '%'))")
     List<Candidato> findByVagaIdAndNomeContaining(@Param("vagaId") Long vagaId, @Param("nome") String nome);
+
+    // Método para contar candidatos por vaga
+    long countByVagaId(Long vagaId);
 }

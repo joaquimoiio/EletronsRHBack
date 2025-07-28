@@ -6,10 +6,12 @@ import com.empresa.sistemarh.repository.CandidatoRepository;
 import com.empresa.sistemarh.repository.VagaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @Service
+@Transactional
 public class CandidatoService {
 
     @Autowired
@@ -30,6 +32,14 @@ public class CandidatoService {
             return candidatoRepository.findByVagaId(vagaId);
         }
         return candidatoRepository.findByVagaIdAndNomeContaining(vagaId, nome.trim());
+    }
+
+    public long contarCandidatosPorVaga(Long vagaId) {
+        return candidatoRepository.countByVagaId(vagaId);
+    }
+
+    public long contarTotalCandidatos() {
+        return candidatoRepository.count();
     }
 
     public Candidato inscreverCandidato(Long vagaId, String nome, String email, MultipartFile curriculo) {
