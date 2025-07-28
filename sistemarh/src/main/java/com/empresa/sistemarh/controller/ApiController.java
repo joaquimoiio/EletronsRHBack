@@ -112,7 +112,8 @@ public class ApiController {
         List<VagaDTO> vagasDTO = vagas.stream()
                 .map(vaga -> {
                     long candidatosCount = candidatoService.contarCandidatosPorVaga(vaga.getId());
-                    return new VagaDTO(vaga, candidatosCount);
+                    long candidatosChamadosCount = candidatoService.contarCandidatosChamadosPorVaga(vaga.getId());
+                    return new VagaDTO(vaga, candidatosCount, candidatosChamadosCount);
                 })
                 .collect(Collectors.toList());
         return ResponseEntity.ok(vagasDTO);
@@ -209,16 +210,28 @@ public class ApiController {
     // === CANDIDATOS ===
     @GetMapping("/vagas/{vagaId}/candidatos")
     public ResponseEntity<List<Candidato>> listarCandidatos(@PathVariable Long vagaId,
-                                                            @RequestParam(required = false) String filtro) {
-        List<Candidato> candidatos = candidatoService.buscarPorVagaENome(vagaId, filtro);
+                                                            @RequestParam(required = false) String filtro,
+                                                            @RequestParam(required = false) String status) {
+        List<Candidato> candidatos;
+
+        if (status != null && !status.isEmpty()) {
+            StatusCandidato statusCandidato = StatusCandidato.valueOf(status.toUpperCase());
+            candidatos = candidatoService.buscarPorVagaEStatus(vagaId, statusCandidato, filtro);
+        } else {
+            candidatos = candidatoService.buscarPorVagaENome(vagaId, filtro);
+        }
+
         return ResponseEntity.ok(candidatos);
     }
 
     @GetMapping("/vagas/{vagaId}/candidatos/count")
     public ResponseEntity<Map<String, Long>> contarCandidatos(@PathVariable Long vagaId) {
         long count = candidatoService.contarCandidatosPorVaga(vagaId);
+        long countChamados = candidatoService.contarCandidatosChamadosPorVaga(vagaId);
+
         Map<String, Long> response = new HashMap<>();
-        response.put("count", count);
+        response.put("total", count);
+        response.put("chamados", countChamados);
         return ResponseEntity.ok(response);
     }
 
@@ -229,6 +242,29 @@ public class ApiController {
                                               @RequestParam(required = false) MultipartFile curriculo) {
         try {
             Candidato candidato = candidatoService.inscreverCandidato(vagaId, nome, email, curriculo);
+            return ResponseEntity.ok(candidato);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PatchMapping("/candidatos/{candidatoId}/chamar")
+    public ResponseEntity<?> chamarCandidatoParaEntrevista(@PathVariable Long candidatoId) {
+        try {
+            Candidato candidato = candidatoService.chamarParaEntrevista(candidatoId);
+            return ResponseEntity.ok(candidato);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PatchMapping("/candidatos/{candidatoId}/status")
+    public ResponseEntity<?> alterarStatusCandidato(@PathVariable Long candidatoId,
+                                                    @RequestBody Map<String, String> request) {
+        try {
+            String status = request.get("status");
+            StatusCandidato novoStatus = StatusCandidato.valueOf(status.toUpperCase());
+            Candidato candidato = candidatoService.alterarStatusCandidato(candidatoId, novoStatus);
             return ResponseEntity.ok(candidato);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

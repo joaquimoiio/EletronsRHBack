@@ -1,6 +1,7 @@
 package com.empresa.sistemarh.service;
 
 import com.empresa.sistemarh.model.Candidato;
+import com.empresa.sistemarh.model.StatusCandidato;
 import com.empresa.sistemarh.model.Vaga;
 import com.empresa.sistemarh.repository.CandidatoRepository;
 import com.empresa.sistemarh.repository.VagaRepository;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -34,8 +36,19 @@ public class CandidatoService {
         return candidatoRepository.findByVagaIdAndNomeContaining(vagaId, nome.trim());
     }
 
+    public List<Candidato> buscarPorVagaEStatus(Long vagaId, StatusCandidato status, String nome) {
+        if (nome == null || nome.trim().isEmpty()) {
+            return candidatoRepository.findByVagaIdAndStatus(vagaId, status);
+        }
+        return candidatoRepository.findByVagaIdAndStatusAndNomeContaining(vagaId, status, nome.trim());
+    }
+
     public long contarCandidatosPorVaga(Long vagaId) {
         return candidatoRepository.countByVagaId(vagaId);
+    }
+
+    public long contarCandidatosChamadosPorVaga(Long vagaId) {
+        return candidatoRepository.countByVagaIdAndStatus(vagaId, StatusCandidato.CHAMADO);
     }
 
     public long contarTotalCandidatos() {
@@ -52,6 +65,33 @@ public class CandidatoService {
             String caminhoArquivo = fileService.salvarArquivo(curriculo, "curriculos");
             candidato.setCaminhoCurriculo(caminhoArquivo);
             candidato.setNomeArquivoCurriculo(curriculo.getOriginalFilename());
+        }
+
+        return candidatoRepository.save(candidato);
+    }
+
+    public Candidato chamarParaEntrevista(Long candidatoId) {
+        Candidato candidato = candidatoRepository.findById(candidatoId)
+                .orElseThrow(() -> new IllegalArgumentException("Candidato não encontrado"));
+
+        if (candidato.getStatus() == StatusCandidato.CHAMADO) {
+            throw new IllegalArgumentException("Candidato já foi chamado para entrevista");
+        }
+
+        candidato.setStatus(StatusCandidato.CHAMADO);
+        candidato.setDataChamada(LocalDateTime.now());
+
+        return candidatoRepository.save(candidato);
+    }
+
+    public Candidato alterarStatusCandidato(Long candidatoId, StatusCandidato novoStatus) {
+        Candidato candidato = candidatoRepository.findById(candidatoId)
+                .orElseThrow(() -> new IllegalArgumentException("Candidato não encontrado"));
+
+        candidato.setStatus(novoStatus);
+
+        if (novoStatus == StatusCandidato.CHAMADO && candidato.getDataChamada() == null) {
+            candidato.setDataChamada(LocalDateTime.now());
         }
 
         return candidatoRepository.save(candidato);

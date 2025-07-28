@@ -28,8 +28,15 @@ public class Candidato {
     @Column(name = "caminho_curriculo")
     private String caminhoCurriculo;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private StatusCandidato status = StatusCandidato.INSCRITO;
+
     @Column(name = "data_inscricao", nullable = false)
     private LocalDateTime dataInscricao = LocalDateTime.now();
+
+    @Column(name = "data_chamada")
+    private LocalDateTime dataChamada;
 
     // Construtores
     public Candidato() {}
@@ -59,6 +66,12 @@ public class Candidato {
     public String getCaminhoCurriculo() { return caminhoCurriculo; }
     public void setCaminhoCurriculo(String caminhoCurriculo) { this.caminhoCurriculo = caminhoCurriculo; }
 
+    public StatusCandidato getStatus() { return status; }
+    public void setStatus(StatusCandidato status) { this.status = status; }
+
     public LocalDateTime getDataInscricao() { return dataInscricao; }
     public void setDataInscricao(LocalDateTime dataInscricao) { this.dataInscricao = dataInscricao; }
+
+    public LocalDateTime getDataChamada() { return dataChamada; }
+    public void setDataChamada(LocalDateTime dataChamada) { this.dataChamada = dataChamada; }
 }

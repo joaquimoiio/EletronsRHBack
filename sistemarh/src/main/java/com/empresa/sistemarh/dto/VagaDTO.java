@@ -13,11 +13,12 @@ public class VagaDTO {
     private LocalDateTime dataCriacao;
     private Area area;
     private long candidatosCount;
+    private long candidatosChamadosCount;
 
     // Construtores
     public VagaDTO() {}
 
-    public VagaDTO(Vaga vaga, long candidatosCount) {
+    public VagaDTO(Vaga vaga, long candidatosCount, long candidatosChamadosCount) {
         this.id = vaga.getId();
         this.titulo = vaga.getTitulo();
         this.descricao = vaga.getDescricao();
@@ -25,6 +26,7 @@ public class VagaDTO {
         this.dataCriacao = vaga.getDataCriacao();
         this.area = vaga.getArea();
         this.candidatosCount = candidatosCount;
+        this.candidatosChamadosCount = candidatosChamadosCount;
     }
 
     // Getters e Setters
@@ -48,4 +50,7 @@ public class VagaDTO {
 
     public long getCandidatosCount() { return candidatosCount; }
     public void setCandidatosCount(long candidatosCount) { this.candidatosCount = candidatosCount; }
+
+    public long getCandidatosChamadosCount() { return candidatosChamadosCount; }
+    public void setCandidatosChamadosCount(long candidatosChamadosCount) { this.candidatosChamadosCount = candidatosChamadosCount; }
 }
