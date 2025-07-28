@@ -1,7 +1,7 @@
 package com.empresa.sistemarh.service;
 
-import com.empresa.sistemarh.model.StatusVaga;
 import com.empresa.sistemarh.model.Vaga;
+import com.empresa.sistemarh.model.StatusVaga;
 import com.empresa.sistemarh.repository.VagaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -41,18 +41,18 @@ public class VagaService {
         return vagaRepository.save(vaga);
     }
 
-    public void alterarStatus(Long id, StatusVaga novoStatus) {
+    public void alterarStatus(Long id, StatusVaga status) {
         Vaga vaga = vagaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Vaga não encontrada"));
 
-        vaga.setStatus(novoStatus);
+        vaga.setStatus(status);
         vagaRepository.save(vaga);
     }
 
     public void deletar(Long id) {
-        Vaga vaga = vagaRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Vaga não encontrada"));
-
-        vagaRepository.delete(vaga);
+        if (!vagaRepository.existsById(id)) {
+            throw new IllegalArgumentException("Vaga não encontrada");
+        }
+        vagaRepository.deleteById(id);
     }
 }

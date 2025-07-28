@@ -2,6 +2,7 @@ package com.empresa.sistemarh.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,7 +13,7 @@ public class Evento {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Título do evento é obrigatório")
+    @NotBlank(message = "Título é obrigatório")
     @Column(nullable = false)
     private String titulo;
 
@@ -22,19 +23,17 @@ public class Evento {
     @Column(name = "imagem_capa")
     private String imagemCapa;
 
-    @Column(name = "data_criacao")
-    private LocalDateTime dataCriacao;
+    @Column(name = "data_criacao", nullable = false)
+    private LocalDateTime dataCriacao = LocalDateTime.now();
 
-    @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<ImagemEvento> imagens;
 
     // Construtores
-    public Evento() {
-        this.dataCriacao = LocalDateTime.now();
-    }
+    public Evento() {}
 
     public Evento(String titulo) {
-        this();
         this.titulo = titulo;
     }
 

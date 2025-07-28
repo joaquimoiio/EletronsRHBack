@@ -17,6 +17,9 @@ import java.util.Map;
 public class ApiController {
 
     @Autowired
+    private AreaService areaService;
+
+    @Autowired
     private VagaService vagaService;
 
     @Autowired
@@ -25,27 +28,28 @@ public class ApiController {
     @Autowired
     private EventoService eventoService;
 
-    @Autowired
-    private AreaService areaService;
-
     // === ESTATÍSTICAS ===
     @GetMapping("/estatisticas")
     public ResponseEntity<Map<String, Object>> getEstatisticas() {
         Map<String, Object> stats = new HashMap<>();
 
-        var todasVagas = vagaService.listarTodas();
-        var vagasAtivas = vagaService.listarVagasAtivas();
-        var todosEventos = eventoService.listarTodos();
+        List<Area> areas = areaService.listarTodas();
+        List<Vaga> vagasAtivas = vagaService.listarVagasAtivas();
+        List<Evento> eventos = eventoService.listarTodos();
 
-        // Contar total de candidatos
-        long totalCandidatos = todasVagas.stream()
-                .mapToLong(vaga -> vaga.getCandidatos() != null ? vaga.getCandidatos().size() : 0)
-                .sum();
+        // Contar total de candidatos de todas as vagas
+        List<Vaga> todasVagas = vagaService.listarTodas();
+        long totalCandidatos = 0;
+        for (Vaga vaga : todasVagas) {
+            if (vaga.getCandidatos() != null) {
+                totalCandidatos += vaga.getCandidatos().size();
+            }
+        }
 
-        stats.put("totalVagas", todasVagas.size());
+        stats.put("totalAreas", areas.size());
         stats.put("vagasAtivas", vagasAtivas.size());
+        stats.put("totalEventos", eventos.size());
         stats.put("totalCandidatos", totalCandidatos);
-        stats.put("totalEventos", todosEventos.size());
 
         return ResponseEntity.ok(stats);
     }
@@ -53,33 +57,44 @@ public class ApiController {
     // === ÁREAS ===
     @GetMapping("/areas")
     public ResponseEntity<List<Area>> listarAreas() {
-        List<Area> areas = areaService.listarTodas();
-        return ResponseEntity.ok(areas);
+        return ResponseEntity.ok(areaService.listarTodas());
     }
 
     @GetMapping("/areas/{id}")
-    public ResponseEntity<Area> buscarAreaPorId(@PathVariable Long id) {
+    public ResponseEntity<Area> buscarArea(@PathVariable Long id) {
         return areaService.buscarPorId(id)
-                .map(area -> ResponseEntity.ok(area))
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/areas")
-    public ResponseEntity<?> criarArea(@RequestBody Area area) {
+    public ResponseEntity<?> criarArea(@RequestBody Map<String, String> request) {
         try {
-            Area novaArea = areaService.salvar(area);
-            return ResponseEntity.ok(novaArea);
-        } catch (IllegalArgumentException e) {
+            String nome = request.get("nome");
+            if (nome == null || nome.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Nome é obrigatório");
+            }
+
+            Area area = new Area(nome.trim());
+            Area areaSalva = areaService.salvar(area);
+            return ResponseEntity.ok(areaSalva);
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     @PutMapping("/areas/{id}")
-    public ResponseEntity<?> atualizarArea(@PathVariable Long id, @RequestBody Area area) {
+    public ResponseEntity<?> atualizarArea(@PathVariable Long id, @RequestBody Map<String, String> request) {
         try {
+            String nome = request.get("nome");
+            if (nome == null || nome.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Nome é obrigatório");
+            }
+
+            Area area = new Area(nome.trim());
             Area areaAtualizada = areaService.atualizar(id, area);
             return ResponseEntity.ok(areaAtualizada);
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -89,59 +104,91 @@ public class ApiController {
         try {
             areaService.deletar(id);
             return ResponseEntity.ok().build();
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     // === VAGAS ===
     @GetMapping("/vagas")
-    public ResponseEntity<List<Vaga>> listarVagas() {
-        List<Vaga> vagas = vagaService.listarTodas();
-        return ResponseEntity.ok(vagas);
+    public ResponseEntity<List<Vaga>> listarTodasVagas() {
+        return ResponseEntity.ok(vagaService.listarTodas());
     }
 
     @GetMapping("/vagas/ativas")
     public ResponseEntity<List<Vaga>> listarVagasAtivas() {
-        List<Vaga> vagas = vagaService.listarVagasAtivas();
-        return ResponseEntity.ok(vagas);
+        return ResponseEntity.ok(vagaService.listarVagasAtivas());
     }
 
     @GetMapping("/vagas/{id}")
-    public ResponseEntity<Vaga> buscarVagaPorId(@PathVariable Long id) {
+    public ResponseEntity<Vaga> buscarVaga(@PathVariable Long id) {
         return vagaService.buscarPorId(id)
-                .map(vaga -> ResponseEntity.ok(vaga))
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/vagas")
-    public ResponseEntity<?> criarVaga(@RequestBody Vaga vaga) {
+    public ResponseEntity<?> criarVaga(@RequestBody Map<String, Object> request) {
         try {
-            Vaga novaVaga = vagaService.salvar(vaga);
-            return ResponseEntity.ok(novaVaga);
+            String titulo = (String) request.get("titulo");
+            String descricao = (String) request.get("descricao");
+            Map<String, Object> areaMap = (Map<String, Object>) request.get("area");
+
+            if (titulo == null || titulo.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Título é obrigatório");
+            }
+
+            if (areaMap == null || areaMap.get("id") == null) {
+                return ResponseEntity.badRequest().body("Área é obrigatória");
+            }
+
+            Long areaId = Long.valueOf(areaMap.get("id").toString());
+            Area area = areaService.buscarPorId(areaId)
+                    .orElseThrow(() -> new IllegalArgumentException("Área não encontrada"));
+
+            Vaga vaga = new Vaga(titulo.trim(), area, descricao);
+            Vaga vagaSalva = vagaService.salvar(vaga);
+            return ResponseEntity.ok(vagaSalva);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     @PutMapping("/vagas/{id}")
-    public ResponseEntity<?> atualizarVaga(@PathVariable Long id, @RequestBody Vaga vaga) {
+    public ResponseEntity<?> atualizarVaga(@PathVariable Long id, @RequestBody Map<String, Object> request) {
         try {
-            Vaga vagaAtualizada = vagaService.atualizar(id, vaga);
-            return ResponseEntity.ok(vagaAtualizada);
-        } catch (IllegalArgumentException e) {
+            String titulo = (String) request.get("titulo");
+            String descricao = (String) request.get("descricao");
+            Map<String, Object> areaMap = (Map<String, Object>) request.get("area");
+
+            if (titulo == null || titulo.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Título é obrigatório");
+            }
+
+            if (areaMap == null || areaMap.get("id") == null) {
+                return ResponseEntity.badRequest().body("Área é obrigatória");
+            }
+
+            Long areaId = Long.valueOf(areaMap.get("id").toString());
+            Area area = areaService.buscarPorId(areaId)
+                    .orElseThrow(() -> new IllegalArgumentException("Área não encontrada"));
+
+            Vaga vagaAtualizada = new Vaga(titulo.trim(), area, descricao);
+            Vaga vaga = vagaService.atualizar(id, vagaAtualizada);
+            return ResponseEntity.ok(vaga);
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     @PatchMapping("/vagas/{id}/status")
-    public ResponseEntity<?> alterarStatusVaga(@PathVariable Long id, @RequestBody Map<String, String> statusData) {
+    public ResponseEntity<?> alterarStatusVaga(@PathVariable Long id, @RequestBody Map<String, String> request) {
         try {
-            String statusStr = statusData.get("status");
-            StatusVaga novoStatus = StatusVaga.valueOf(statusStr);
-            vagaService.alterarStatus(id, novoStatus);
+            String status = request.get("status");
+            StatusVaga statusVaga = StatusVaga.valueOf(status);
+            vagaService.alterarStatus(id, statusVaga);
             return ResponseEntity.ok().build();
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -151,53 +198,42 @@ public class ApiController {
         try {
             vagaService.deletar(id);
             return ResponseEntity.ok().build();
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     // === CANDIDATOS ===
     @GetMapping("/vagas/{vagaId}/candidatos")
-    public ResponseEntity<List<Candidato>> getCandidatos(@PathVariable Long vagaId,
-                                                         @RequestParam(required = false) String filtro) {
-        try {
-            List<Candidato> candidatos = candidatoService.buscarPorVagaENome(vagaId, filtro);
-            return ResponseEntity.ok(candidatos);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(List.of());
-        }
+    public ResponseEntity<List<Candidato>> listarCandidatos(@PathVariable Long vagaId,
+                                                            @RequestParam(required = false) String filtro) {
+        List<Candidato> candidatos = candidatoService.buscarPorVagaENome(vagaId, filtro);
+        return ResponseEntity.ok(candidatos);
     }
 
     @PostMapping("/candidaturas")
-    public ResponseEntity<?> criarCandidatura(@RequestParam Long vagaId,
-                                              @RequestParam String nome,
-                                              @RequestParam(required = false) String email,
+    public ResponseEntity<?> criarCandidatura(@RequestParam String nome,
+                                              @RequestParam String email,
+                                              @RequestParam Long vagaId,
                                               @RequestParam(required = false) MultipartFile curriculo) {
         try {
-            Candidato novoCandidato = candidatoService.inscreverCandidato(vagaId, nome, curriculo);
-            return ResponseEntity.ok(novoCandidato);
+            Candidato candidato = candidatoService.inscreverCandidato(vagaId, nome, email, curriculo);
+            return ResponseEntity.ok(candidato);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @GetMapping("/candidatos")
-    public ResponseEntity<List<Candidato>> listarCandidatos() {
-        // Para estatísticas - retorna lista vazia por enquanto
-        return ResponseEntity.ok(List.of());
-    }
-
     // === EVENTOS ===
     @GetMapping("/eventos")
     public ResponseEntity<List<Evento>> listarEventos() {
-        List<Evento> eventos = eventoService.listarTodos();
-        return ResponseEntity.ok(eventos);
+        return ResponseEntity.ok(eventoService.listarTodos());
     }
 
     @GetMapping("/eventos/{id}")
-    public ResponseEntity<Evento> buscarEventoPorId(@PathVariable Long id) {
+    public ResponseEntity<Evento> buscarEvento(@PathVariable Long id) {
         return eventoService.buscarPorId(id)
-                .map(evento -> ResponseEntity.ok(evento))
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
@@ -205,36 +241,19 @@ public class ApiController {
     public ResponseEntity<?> criarEvento(@RequestParam String titulo,
                                          @RequestParam(required = false) MultipartFile imagemCapa) {
         try {
-            Evento novoEvento = eventoService.criarEvento(titulo, imagemCapa);
-            return ResponseEntity.ok(novoEvento);
+            Evento evento = eventoService.criarEvento(titulo, imagemCapa);
+            return ResponseEntity.ok(evento);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     @PutMapping("/eventos/{id}")
-    public ResponseEntity<?> atualizarEvento(@PathVariable Long id, @RequestBody Map<String, String> dados) {
+    public ResponseEntity<?> atualizarEvento(@PathVariable Long id, @RequestBody Map<String, String> request) {
         try {
-            String descricao = dados.get("descricao");
-            Evento eventoAtualizado = eventoService.atualizarEvento(id, descricao);
-            return ResponseEntity.ok(eventoAtualizado);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    @GetMapping("/eventos/{id}/imagens")
-    public ResponseEntity<List<ImagemEvento>> listarImagensEvento(@PathVariable Long id) {
-        List<ImagemEvento> imagens = eventoService.listarImagensEvento(id);
-        return ResponseEntity.ok(imagens);
-    }
-
-    @PostMapping("/eventos/{id}/imagens")
-    public ResponseEntity<?> adicionarImagemEvento(@PathVariable Long id,
-                                                   @RequestParam MultipartFile imagem) {
-        try {
-            ImagemEvento novaImagem = eventoService.adicionarImagemEvento(id, imagem);
-            return ResponseEntity.ok(novaImagem);
+            String descricao = request.get("descricao");
+            Evento evento = eventoService.atualizarEvento(id, descricao);
+            return ResponseEntity.ok(evento);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -245,7 +264,23 @@ public class ApiController {
         try {
             eventoService.deletarEvento(id);
             return ResponseEntity.ok().build();
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/eventos/{id}/imagens")
+    public ResponseEntity<List<ImagemEvento>> listarImagensEvento(@PathVariable Long id) {
+        return ResponseEntity.ok(eventoService.listarImagensEvento(id));
+    }
+
+    @PostMapping("/eventos/{id}/imagens")
+    public ResponseEntity<?> adicionarImagemEvento(@PathVariable Long id,
+                                                   @RequestParam MultipartFile imagem) {
+        try {
+            ImagemEvento imagemEvento = eventoService.adicionarImagemEvento(id, imagem);
+            return ResponseEntity.ok(imagemEvento);
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -255,21 +290,15 @@ public class ApiController {
         try {
             eventoService.deletarImagemEvento(imagemId);
             return ResponseEntity.ok().build();
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
     // === NOTIFICAÇÕES ===
-    @GetMapping("/notificacoes")
-    public ResponseEntity<Object[]> getNotificacoes() {
-        // Implementar lógica de notificações se necessário
-        return ResponseEntity.ok(new Object[0]);
-    }
-
     @PostMapping("/notificacoes")
-    public ResponseEntity<?> cadastrarNotificacao(@RequestBody Map<String, Object> dados) {
-        // Implementar cadastro de notificações se necessário
+    public ResponseEntity<?> criarNotificacao(@RequestBody Map<String, Object> request) {
+        // Implementar se necessário - por enquanto apenas retorna sucesso
         return ResponseEntity.ok().build();
     }
 }

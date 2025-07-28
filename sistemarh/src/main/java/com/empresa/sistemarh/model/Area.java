@@ -2,6 +2,7 @@ package com.empresa.sistemarh.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
 @Entity
@@ -11,11 +12,12 @@ public class Area {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Nome da área é obrigatório")
-    @Column(nullable = false, unique = true)
+    @NotBlank(message = "Nome é obrigatório")
+    @Column(unique = true, nullable = false)
     private String nome;
 
     @OneToMany(mappedBy = "area", cascade = CascadeType.ALL)
+    @JsonIgnore
     private List<Vaga> vagas;
 
     // Construtores

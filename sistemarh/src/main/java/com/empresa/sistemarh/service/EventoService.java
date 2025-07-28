@@ -21,7 +21,7 @@ public class EventoService {
     private ImagemEventoRepository imagemEventoRepository;
 
     @Autowired
-    private FileUploadService fileUploadService;
+    private FileService fileUploadService;
 
     public List<Evento> listarTodos() {
         return eventoRepository.findAllOrderByDataCriacaoDesc();

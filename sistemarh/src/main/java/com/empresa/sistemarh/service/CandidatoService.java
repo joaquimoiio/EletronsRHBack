@@ -7,7 +7,6 @@ import com.empresa.sistemarh.repository.VagaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -20,7 +19,7 @@ public class CandidatoService {
     private VagaRepository vagaRepository;
 
     @Autowired
-    private FileUploadService fileUploadService;
+    private FileService fileService;
 
     public List<Candidato> listarPorVaga(Long vagaId) {
         return candidatoRepository.findByVagaId(vagaId);
@@ -33,14 +32,14 @@ public class CandidatoService {
         return candidatoRepository.findByVagaIdAndNomeContaining(vagaId, nome.trim());
     }
 
-    public Candidato inscreverCandidato(Long vagaId, String nome, MultipartFile curriculo) throws IOException {
+    public Candidato inscreverCandidato(Long vagaId, String nome, String email, MultipartFile curriculo) {
         Vaga vaga = vagaRepository.findById(vagaId)
                 .orElseThrow(() -> new IllegalArgumentException("Vaga não encontrada"));
 
-        Candidato candidato = new Candidato(nome, vaga);
+        Candidato candidato = new Candidato(nome, email, vaga);
 
         if (curriculo != null && !curriculo.isEmpty()) {
-            String caminhoArquivo = fileUploadService.salvarArquivo(curriculo, "curriculos");
+            String caminhoArquivo = fileService.salvarArquivo(curriculo, "curriculos");
             candidato.setCaminhoCurriculo(caminhoArquivo);
             candidato.setNomeArquivoCurriculo(curriculo.getOriginalFilename());
         }

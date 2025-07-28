@@ -32,24 +32,14 @@ public class AreaService {
         Area area = areaRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Área não encontrada"));
 
-        // Verificar se o novo nome já existe (exceto para a própria área)
-        Optional<Area> areaExistente = areaRepository.findByNome(areaAtualizada.getNome());
-        if (areaExistente.isPresent() && !areaExistente.get().getId().equals(id)) {
-            throw new IllegalArgumentException("Já existe uma área com este nome");
-        }
-
         area.setNome(areaAtualizada.getNome());
         return areaRepository.save(area);
     }
 
     public void deletar(Long id) {
-        Area area = areaRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Área não encontrada"));
-
-        if (area.getVagas() != null && !area.getVagas().isEmpty()) {
-            throw new IllegalArgumentException("Não é possível deletar área que possui vagas cadastradas");
+        if (!areaRepository.existsById(id)) {
+            throw new IllegalArgumentException("Área não encontrada");
         }
-
-        areaRepository.delete(area);
+        areaRepository.deleteById(id);
     }
 }

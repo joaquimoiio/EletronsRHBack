@@ -9,14 +9,14 @@ public class ImagemEvento {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "evento_id", nullable = false)
     private Evento evento;
 
-    @Column(name = "nome_arquivo")
+    @Column(name = "nome_arquivo", nullable = false)
     private String nomeArquivo;
 
-    @Column(name = "caminho_arquivo")
+    @Column(name = "caminho_arquivo", nullable = false)
     private String caminhoArquivo;
 
     // Construtores

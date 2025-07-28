@@ -5,18 +5,15 @@ import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-@Controller
+@RestController
 @RequestMapping("/uploads")
-public class FileDownloadController {
+@CrossOrigin(origins = "*")
+public class FileController {
 
     private final String UPLOAD_DIR = "uploads/";
 
@@ -46,17 +43,12 @@ public class FileDownloadController {
     private String determineContentType(String filename) {
         String extension = filename.substring(filename.lastIndexOf(".")).toLowerCase();
         switch (extension) {
-            case ".pdf":
-                return "application/pdf";
+            case ".pdf": return "application/pdf";
             case ".jpg":
-            case ".jpeg":
-                return "image/jpeg";
-            case ".png":
-                return "image/png";
-            case ".gif":
-                return "image/gif";
-            default:
-                return "application/octet-stream";
+            case ".jpeg": return "image/jpeg";
+            case ".png": return "image/png";
+            case ".gif": return "image/gif";
+            default: return "application/octet-stream";
         }
     }
 }

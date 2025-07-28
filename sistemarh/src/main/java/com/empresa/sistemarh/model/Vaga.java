@@ -2,6 +2,7 @@ package com.empresa.sistemarh.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -12,11 +13,11 @@ public class Vaga {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Título da vaga é obrigatório")
+    @NotBlank(message = "Título é obrigatório")
     @Column(nullable = false)
     private String titulo;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "area_id", nullable = false)
     private Area area;
 
@@ -24,21 +25,20 @@ public class Vaga {
     private String descricao;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private StatusVaga status = StatusVaga.ATIVA;
 
-    @Column(name = "data_criacao")
-    private LocalDateTime dataCriacao;
+    @Column(name = "data_criacao", nullable = false)
+    private LocalDateTime dataCriacao = LocalDateTime.now();
 
-    @OneToMany(mappedBy = "vaga", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "vaga", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Candidato> candidatos;
 
     // Construtores
-    public Vaga() {
-        this.dataCriacao = LocalDateTime.now();
-    }
+    public Vaga() {}
 
     public Vaga(String titulo, Area area, String descricao) {
-        this();
         this.titulo = titulo;
         this.area = area;
         this.descricao = descricao;
