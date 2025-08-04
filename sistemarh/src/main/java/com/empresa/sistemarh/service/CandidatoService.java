@@ -55,13 +55,43 @@ public class CandidatoService {
         return candidatoRepository.count();
     }
 
-    public Candidato inscreverCandidato(Long vagaId, String nome, String email, MultipartFile curriculo) {
+    public Candidato inscreverCandidato(Long vagaId, String nome, String email, String telefone, MultipartFile curriculo) {
         Vaga vaga = vagaRepository.findById(vagaId)
                 .orElseThrow(() -> new IllegalArgumentException("Vaga não encontrada"));
 
-        Candidato candidato = new Candidato(nome, email, vaga);
+        // Validações
+        if (nome == null || nome.trim().isEmpty()) {
+            throw new IllegalArgumentException("Nome é obrigatório");
+        }
+
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("E-mail é obrigatório");
+        }
+
+        if (telefone == null || telefone.trim().isEmpty()) {
+            throw new IllegalArgumentException("Telefone é obrigatório");
+        }
+
+        // Validar formato do telefone (apenas números, deve ter 10 ou 11 dígitos)
+        String telefoneNumeros = telefone.replaceAll("\\D", "");
+        if (telefoneNumeros.length() < 10 || telefoneNumeros.length() > 11) {
+            throw new IllegalArgumentException("Telefone deve ter entre 10 e 11 dígitos");
+        }
+
+        Candidato candidato = new Candidato(nome.trim(), email.trim(), telefone.trim(), vaga);
 
         if (curriculo != null && !curriculo.isEmpty()) {
+            // Validar tipo de arquivo
+            String originalFilename = curriculo.getOriginalFilename();
+            if (originalFilename == null || !originalFilename.toLowerCase().endsWith(".pdf")) {
+                throw new IllegalArgumentException("Apenas arquivos PDF são aceitos para o currículo");
+            }
+
+            // Validar tamanho do arquivo (5MB)
+            if (curriculo.getSize() > 5 * 1024 * 1024) {
+                throw new IllegalArgumentException("O arquivo do currículo deve ter no máximo 5MB");
+            }
+
             String caminhoArquivo = fileService.salvarArquivo(curriculo, "curriculos");
             candidato.setCaminhoCurriculo(caminhoArquivo);
             candidato.setNomeArquivoCurriculo(curriculo.getOriginalFilename());

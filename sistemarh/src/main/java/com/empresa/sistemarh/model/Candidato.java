@@ -18,6 +18,9 @@ public class Candidato {
     @Column
     private String email;
 
+    @Column
+    private String telefone;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "vaga_id", nullable = false)
     private Vaga vaga;
@@ -41,9 +44,10 @@ public class Candidato {
     // Construtores
     public Candidato() {}
 
-    public Candidato(String nome, String email, Vaga vaga) {
+    public Candidato(String nome, String email, String telefone, Vaga vaga) {
         this.nome = nome;
         this.email = email;
+        this.telefone = telefone;
         this.vaga = vaga;
     }
 
@@ -56,6 +60,9 @@ public class Candidato {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getTelefone() { return telefone; }
+    public void setTelefone(String telefone) { this.telefone = telefone; }
 
     public Vaga getVaga() { return vaga; }
     public void setVaga(Vaga vaga) { this.vaga = vaga; }

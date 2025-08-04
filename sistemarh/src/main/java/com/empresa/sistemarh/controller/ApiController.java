@@ -238,10 +238,11 @@ public class ApiController {
     @PostMapping("/candidaturas")
     public ResponseEntity<?> criarCandidatura(@RequestParam String nome,
                                               @RequestParam String email,
+                                              @RequestParam String telefone,
                                               @RequestParam Long vagaId,
                                               @RequestParam(required = false) MultipartFile curriculo) {
         try {
-            Candidato candidato = candidatoService.inscreverCandidato(vagaId, nome, email, curriculo);
+            Candidato candidato = candidatoService.inscreverCandidato(vagaId, nome, email, telefone, curriculo);
             return ResponseEntity.ok(candidato);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
